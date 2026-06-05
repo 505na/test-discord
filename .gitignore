@@ -1,0 +1,8 @@
+# Ignore environment files containing secrets
+config.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
