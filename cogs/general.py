@@ -140,9 +140,109 @@ class GeneralCommands(commands.Cog):
         )
 
     @commands.command()
+    async def gay(self, ctx):
+        target = self.random_member(ctx.guild)
+
+        if not target:
+            return await ctx.send("❌ Za mało osób żeby wybrać! ALERT")
+
+        await ctx.send(
+            f"Dzisiejszym gejem zostaje {self.format_random_name(target)} Gayge"
+        )
+
+    @commands.command()
+    async def cute(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% słodki/a SoCute"
+        )
+
+    @commands.command()
+    async def adopt(self, ctx):
+        target = self.random_member(ctx.guild, ctx.author)
+
+        if not target:
+            return await ctx.send("❌ Nie ma kogo adoptować! ALERT")
+
+        await ctx.send(
+            f"{ctx.author.mention} adoptuje {self.format_random_name(target)} :d"
+        )
+
+    @commands.command()
+    async def redflag(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% redflagiem redFLG"
+        )
+
+    @commands.command()
+    async def greenflag(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% greenflagiem greenFLG"
+        )
+
+    @commands.command()
+    async def jealous(self, ctx):
+        target = self.random_member(ctx.guild, ctx.author)
+
+        if not target:
+            return await ctx.send("❌ Nie ma o kogo być zazdrosnym! ALERT")
+
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% zazdrosny/a o {self.format_random_name(target)} catLook"
+        )
+
+    @commands.command()
+    async def romantic(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% romantyczny/a Romantic"
+        )
+
+    @commands.command(name="princess")
+    async def princess(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% księżniczką princess"
+        )
+
+    @commands.command(name="prince")
+    async def prince(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} jest {percent}% księciem prince"
+        )
+
+    @commands.command()
+    async def classic(self, ctx):
+        await ctx.send(
+            f"{ctx.author.mention} samo się klikło Kek"
+        )
+
+    @commands.command()
+    async def urlop(self, ctx):
+        await ctx.send(
+            f"{ctx.author.mention} ide na urlop :b"
+        )
+
+    @commands.command()
+    async def branie(self, ctx):
+        first = self.random_member(ctx.guild)
+        second = self.random_member(ctx.guild, first)
+
+        if not first or not second:
+            return await ctx.send("❌ Za mało osób żeby zrobić branie!")
+
+        await ctx.send(
+            f"{self.format_random_name(first)} ma branie na {self.format_random_name(second)}"
+        )
+
+    @commands.command()
     async def cmd(self, ctx):
         await ctx.send(
-            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !cmd"
+            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
         )
 
 
