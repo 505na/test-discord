@@ -1,8 +1,11 @@
 import os
 import sys
 import random
+import subprocess
 import discord
 from discord.ext import commands
+import asyncio
+from pathlib import Path
 
 
 class GeneralCommands(commands.Cog):
@@ -265,8 +268,46 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def cmd(self, ctx):
         await ctx.send(
-            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd, !reload"
+            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
         )
+
+    @commands.command()
+    @commands.is_owner()
+    async def update(self, ctx):
+        repo_path = Path(__file__).resolve().parents[1]
+        git_cmd = ["git", "pull"]
+
+        try:
+            proc = subprocess.run(
+                git_cmd,
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            stdout = proc.stdout.strip()
+            stderr = proc.stderr.strip()
+            output = stdout or stderr or "Brak wyjścia."
+            if len(output) > 1800:
+                output = output[:1800] + "..."
+
+            if proc.returncode != 0:
+                await ctx.send(f"❌ Błąd podczas aktualizacji:\n```{output}```")
+                return
+
+            if "Already up to date." in output or "Already up-to-date." in output:
+                await ctx.send("✅ Repozytorium już zaktualizowane.")
+                return
+
+            await ctx.send(f"✅ Aktualizacja pobrana:\n```{output}```\n🔄 Restartuję bota...")
+            await asyncio.sleep(1)
+            await self.bot.close()
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except FileNotFoundError:
+            await ctx.send("❌ Nie znaleziono polecenia git. Upewnij się, że git jest zainstalowany.")
+        except Exception as e:
+            await ctx.send(f"❌ Nieoczekiwany błąd: {e}")
 
     @commands.command()
     @commands.is_owner()
