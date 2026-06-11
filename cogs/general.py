@@ -217,6 +217,27 @@ class GeneralCommands(commands.Cog):
             f"{ctx.author.mention} jest {percent}% księciem prince"
         )
 
+    @commands.command(name="princepałki")
+    async def princepalki(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} IDZ I SE KUP! <:bla:1484298250008789074> "
+        )
+
+    @commands.command(name="princessa")
+    async def princessa(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} NIE MAM, KUP SE! <:bla:1484298250008789074> "
+        )
+
+    @commands.command(name="princepolo")
+    async def princepolo(self, ctx):
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"{ctx.author.mention} NIE MAM, IDZ I SE KUP! <:bla:1484298250008789074> "
+        )
+
     @commands.command()
     async def classic(self, ctx):
         await ctx.send(
