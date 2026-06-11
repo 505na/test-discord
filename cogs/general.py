@@ -1,3 +1,5 @@
+import os
+import sys
 import random
 import discord
 from discord.ext import commands
@@ -242,8 +244,15 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def cmd(self, ctx):
         await ctx.send(
-            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
+            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd, !reload"
         )
+
+    @commands.command()
+    @commands.is_owner()
+    async def reload(self, ctx):
+        await ctx.send("🔄 Restartuję bota...")
+        await self.bot.close()
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
 async def setup(bot):

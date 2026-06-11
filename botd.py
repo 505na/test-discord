@@ -209,6 +209,8 @@ async def on_message(message):
 async def on_command_error(ctx, error):
     if isinstance(error, WrongChannelError):
         await ctx.send("Zły kanał, spróbuj na <#1035107360777175041>")
+    elif isinstance(error, commands.NotOwner):
+        await ctx.send("❌Nie masz uprawnień do użycia tej komendy.")
     elif isinstance(error, commands.CheckFailure):
         await ctx.send("❌ Nie masz uprawnień do użycia tej komendy.")
     else:
