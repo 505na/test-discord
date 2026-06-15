@@ -36,6 +36,9 @@ intents.members = True
 # Bot
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
+# Zmienna do śledzenia trybu dostępu (True = tylko beta testerzy, False = dostęp publiczny)
+BETA_MODE_ENABLED = True
+
 # Register extensions before connecting
 async def _setup_hook():
     try:
@@ -171,11 +174,16 @@ async def on_ready():
                 raise WrongChannelError("wrong channel")
             if ctx.author.id == OWNER_ID:
                 return True
-            if BETA_TESTER_ROLE_ID is not None:
-                for role in ctx.author.roles:
-                    if role.id == BETA_TESTER_ROLE_ID:
-                        return True
-            return False
+            # Jeśli tryb beta jest włączony, sprawdź rolę beta testera
+            if BETA_MODE_ENABLED:
+                if BETA_TESTER_ROLE_ID is not None:
+                    for role in ctx.author.roles:
+                        if role.id == BETA_TESTER_ROLE_ID:
+                            return True
+                return False
+            else:
+                # Jeśli tryb beta jest wyłączony, pozwól dostęp wszystkim
+                return True
 
         bot.check(_has_access)
         if BETA_TESTER_ROLE_ID is not None:

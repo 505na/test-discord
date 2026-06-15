@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 import asyncio
 from pathlib import Path
+import botd
 
 
 class GeneralCommands(commands.Cog):
@@ -315,6 +316,21 @@ class GeneralCommands(commands.Cog):
         await ctx.send("🔄 Restartuję bota...")
         await self.bot.close()
         os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    @commands.command()
+    @commands.is_owner()
+    async def beta(self, ctx):
+        """Przełącza między dostępem dla beta testerów a dostępem ogólnym"""
+        botd.BETA_MODE_ENABLED = not botd.BETA_MODE_ENABLED
+        
+        if botd.BETA_MODE_ENABLED:
+            status = "**włączony** ✅\nTylko użytkownicy z rolą **Beta Tester** mogą używać komend."
+        else:
+            status = "**wyłączony** 🌐\nWszyscy mogą używać komend."
+        
+        await ctx.send(
+            f"🎮 Tryb beta {status}"
+        )
 
 
 async def setup(bot):
