@@ -65,6 +65,17 @@ class GeneralCommands(commands.Cog):
         )
 
     @commands.command()
+    async def makowiec(self, ctx):
+        target = self.random_member(ctx.guild, ctx.author)
+
+        if not target:
+            return await ctx.send("Nikt nie je makowaca !")
+
+        await ctx.send(
+            f"{self.format_random_name(target)} wpierdala makowca <:emoji_17:1515282227087409264> "
+        )
+
+    @commands.command()
     async def ship(self, ctx):
         users = [
             m for m in ctx.guild.members
@@ -269,7 +280,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def cmd(self, ctx):
         await ctx.send(
-            "Dostępne komendy: !test, !hug, !kiss, !myszka, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
+            "Dostępne komendy: !test, !hug, !kiss, !myszka, !makowiec, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
         )
 
     @commands.command()
