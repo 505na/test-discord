@@ -283,6 +283,12 @@ class GeneralCommands(commands.Cog):
             "Dostępne komendy: !test, !hug, !kiss, !myszka, !makowiec, !ship, !60, !dekiel, !aura, !iq, !buu, !fmk, !gay, !cute, !adopt, !redflag, !greenflag, !jealous, !romantic, !princess, !prince, !classic, !urlop, !branie, !cmd"
         )
 
+    @commands.command(name="stop", hidden=True)
+    @commands.is_owner()
+    async def stop(self, ctx):
+        await ctx.send("🛑 Zatrzymuję bota...")
+        await self.bot.close()
+
     @commands.command()
     @commands.is_owner()
     async def update(self, ctx):
