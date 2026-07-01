@@ -287,6 +287,7 @@ class GeneralCommands(commands.Cog):
     @commands.is_owner()
     async def stop(self, ctx):
         await ctx.send("🛑 Zatrzymuję bota...")
+        await self.bot.change_presence(status=discord.Status.offline)
         await self.bot.close()
 
     @commands.command()
