@@ -24,6 +24,7 @@ TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 TWITCH_CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
 TWITCH_CHANNEL = os.getenv("TWITCH_CHANNEL", "505na")
 TWITCH_POLL_INTERVAL = int(os.getenv("TWITCH_POLL_INTERVAL", "180"))
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1035112319065268275"))
 
 if not TOKEN:
     raise ValueError("Brak DISCORD_TOKEN w pliku config.env")
@@ -194,6 +195,90 @@ async def on_ready():
     # Debug: list registered commands
     cmd_names = sorted(c.name for c in bot.commands)
     logger.info(f"Zarejestrowane komendy: {cmd_names}")
+
+def get_log_channel(guild):
+    if guild is None:
+        return None
+    channel = guild.get_channel(LOG_CHANNEL_ID)
+    if isinstance(channel, discord.TextChannel):
+        return channel
+    return None
+
+
+async def _format_account_age(created_at):
+    age_days = max(int((discord.utils.utcnow() - created_at).total_seconds() // 86400), 0)
+    years, remaining_days = divmod(age_days, 365)
+    months, days = divmod(remaining_days, 30)
+
+    if years:
+        parts = [
+            f"{years} year{'s' if years != 1 else ''}",
+            f"{months} month{'s' if months != 1 else ''}",
+            f"{days} day{'s' if days != 1 else ''}",
+        ]
+    elif months:
+        parts = [
+            f"{months} month{'s' if months != 1 else ''}",
+            f"{days} day{'s' if days != 1 else ''}",
+        ]
+    else:
+        parts = [f"{days} day{'s' if days != 1 else ''}"]
+
+    return ", ".join(parts)
+
+
+@bot.event
+async def on_member_join(member):
+    log_channel = get_log_channel(member.guild)
+    if log_channel is None:
+        return
+
+    created_at = member.created_at
+    age_text = await _format_account_age(created_at)
+    joined_at = member.joined_at or discord.utils.utcnow()
+
+    embed = discord.Embed(
+        description=(
+            f"@{member.name} {member.display_name}\n\n"
+            f"**Account Age**\n"
+            f"{age_text}\n\n"
+            f"**ID:** {member.id}"
+        ),
+        color=discord.Color.from_rgb(15, 16, 19),
+        timestamp=joined_at,
+    )
+    embed.color = discord.Color.from_rgb(76, 175, 80)
+    embed.set_author(
+        name="Member Joined",
+        icon_url="https://cdn.discordapp.com/emojis/1374002125509664829.png",
+    )
+    embed.set_footer(text=f"Dołączenie: {joined_at.strftime('%d.%m.%Y %H:%M:%S')}")
+    await log_channel.send(embed=embed)
+
+
+@bot.event
+async def on_member_remove(member):
+    log_channel = get_log_channel(member.guild)
+    if log_channel is None:
+        return
+
+    left_at = discord.utils.utcnow()
+    embed = discord.Embed(
+        description=(
+            f"@{member.name} {member.display_name}\n\n"
+            f"**ID:** {member.id}"
+        ),
+        color=discord.Color.from_rgb(15, 16, 19),
+        timestamp=left_at,
+    )
+    embed.color = discord.Color.from_rgb(255, 82, 82)
+    embed.set_author(
+        name="Member Left",
+        icon_url="https://cdn.discordapp.com/emojis/1374002125509664829.png",
+    )
+    embed.set_footer(text=f"Wyjście: {left_at.strftime('%d.%m.%Y %H:%M:%S')}")
+    await log_channel.send(embed=embed)
+
 
 @bot.event
 async def on_message(message):
