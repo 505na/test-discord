@@ -224,6 +224,52 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-# Run
+async def discord_available() -> bool:
+    """Sprawdza, czy Discord jest dostępny przez API gateway z krótkim timeoutem."""
+    timeout = aiohttp.ClientTimeout(total=5)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get("https://discord.com/api/v10/gateway") as response:
+                return response.status == 200
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as error:
+        logger.warning("Discord jest niedostępny: %s", error)
+        return False
+
+
+async def run_bot() -> None:
+    retry_delay = 10
+
+    while True:
+        if not await discord_available():
+            logger.warning("Brak dostępu do Discorda. Ponawiam sprawdzenie za %s sekund...", retry_delay)
+            await asyncio.sleep(retry_delay)
+            continue
+
+        try:
+            logger.info("Internet działa. Łączenie z Discordem...")
+            await bot.start(TOKEN, reconnect=True)
+            logger.info("Połączenie bota zostało zamknięte. Ponawiam za %s sekund...", retry_delay)
+        except (aiohttp.ClientError, OSError, asyncio.TimeoutError) as error:
+            logger.warning("Błąd połączenia z Discordem: %s. Ponawiam za %s sekund...", error, retry_delay)
+        except discord.LoginFailure:
+            logger.critical(
+                "Logowanie do Discorda nie powiodło się. Sprawdź, czy DISCORD_TOKEN "
+                "w pliku config.env jest poprawnym tokenem bota."
+            )
+            raise
+        except asyncio.CancelledError:
+            logger.info("Zatrzymywanie bota...")
+            raise
+        except Exception:
+            logger.exception("Nieoczekiwany błąd. Ponawiam za %s sekund...", retry_delay)
+        finally:
+            try:
+                await bot.close()
+            except Exception:
+                logger.debug("Błąd podczas zamykania klienta.", exc_info=True)
+
+        await asyncio.sleep(retry_delay)
+
+
 if __name__ == '__main__':
-    bot.run(TOKEN)
+    asyncio.run(run_bot())
