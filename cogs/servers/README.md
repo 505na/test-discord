@@ -7,7 +7,8 @@ prawidłową nazwą modułu Pythona.
 
 Każdy moduł serwerowy powinien zawierać cog dziedziczący po
 `cogs.server_base.ServerCog`. Bazowy cog dopuszcza wykonanie jego komend
-wyłącznie na serwerze, którego ID podano w konstruktorze.
+wyłącznie na serwerze, którego ID podano w konstruktorze. Nazwa klasy cog-a
+musi być unikalna w całym bocie, więc użyj innej nazwy dla każdego serwera.
 
 Przykład zawartości pliku `guild_Home_Alabama.py`:
 
@@ -20,7 +21,7 @@ from cogs.server_base import ServerCog
 GUILD_ID = 1526655387804111068
 
 
-class ServerCommands(ServerCog):
+class HomeAlabamaCommands(ServerCog):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot, GUILD_ID)
 
@@ -30,7 +31,7 @@ class ServerCommands(ServerCog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(ServerCommands(bot))
+    await bot.add_cog(HomeAlabamaCommands(bot))
 ```
 
 Użyj prawdziwego numerycznego ID serwera w `GUILD_ID`. Nazwa pliku jest tylko

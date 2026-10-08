@@ -5,7 +5,7 @@ from cogs.server_base import ServerCog
 GUILD_ID = 1034917608824246324
 
 
-class ServerCommands(ServerCog):
+class LasSosnowyCommands(ServerCog):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot, GUILD_ID)
 
@@ -15,4 +15,4 @@ class ServerCommands(ServerCog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(ServerCommands(bot))
+    await bot.add_cog(LasSosnowyCommands(bot))
