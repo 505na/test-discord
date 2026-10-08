@@ -1,5 +1,8 @@
 import os
 import logging
+import re
+from dataclasses import dataclass
+from pathlib import Path
 
 import discord
 from discord.ext import commands
@@ -37,8 +40,127 @@ intents.members = True
 # Bot
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
-# Zmienna do śledzenia trybu dostępu (True = tylko beta testerzy, False = dostęp publiczny)
-BETA_MODE_ENABLED = True
+# Ustawienia dostępu można nadpisywać osobno dla każdego serwera.
+@dataclass
+class GuildSettings:
+    owner_id: int | None = None
+    beta_tester_role_id: int | None = None
+    allowed_channel_ids: list[int] | None = None
+    log_channel_id: int | None = None
+    beta_mode_enabled: bool = True
+
+
+def _guild_env_value(guild_id: int, setting: str) -> str | None:
+    return os.getenv(f"GUILD_{guild_id}_{setting}")
+
+
+def _parse_guild_int(guild_id: int, setting: str) -> int | None:
+    value = _guild_env_value(guild_id, setting)
+    if value is None or not value.strip():
+        return None
+    try:
+        return int(value)
+    except ValueError as error:
+        raise ValueError(f"GUILD_{guild_id}_{setting} musi być liczbą.") from error
+
+
+def _parse_guild_channel_ids(guild_id: int) -> list[int] | None:
+    setting = "ALLOWED_CHANNEL_IDS"
+    value = _guild_env_value(guild_id, setting)
+    if value is None or not value.strip():
+        return None
+    try:
+        return [int(channel_id.strip()) for channel_id in value.split(",") if channel_id.strip()]
+    except ValueError as error:
+        raise ValueError(
+            f"GUILD_{guild_id}_{setting} musi zawierać liczby oddzielone przecinkami."
+        ) from error
+
+
+def _parse_guild_beta_mode(guild_id: int) -> bool:
+    value = _guild_env_value(guild_id, "BETA_MODE_ENABLED")
+    if value is None or not value.strip():
+        return True
+    normalized = value.strip().lower()
+    if normalized in {"true", "1", "yes", "on"}:
+        return True
+    if normalized in {"false", "0", "no", "off"}:
+        return False
+    raise ValueError(
+        f"GUILD_{guild_id}_BETA_MODE_ENABLED musi mieć wartość true lub false."
+    )
+
+
+def _load_guild_settings() -> dict[int, GuildSettings]:
+    setting_pattern = re.compile(
+        r"^GUILD_(\d+)_(?:OWNER_ID|BETA_TESTER_ROLE_ID|ALLOWED_CHANNEL_IDS|"
+        r"LOG_CHANNEL_ID|BETA_MODE_ENABLED)$"
+    )
+    guild_ids = {
+        int(match.group(1))
+        for name in os.environ
+        if (match := setting_pattern.fullmatch(name))
+    }
+    return {
+        guild_id: GuildSettings(
+            owner_id=_parse_guild_int(guild_id, "OWNER_ID"),
+            beta_tester_role_id=_parse_guild_int(guild_id, "BETA_TESTER_ROLE_ID"),
+            allowed_channel_ids=_parse_guild_channel_ids(guild_id),
+            log_channel_id=_parse_guild_int(guild_id, "LOG_CHANNEL_ID"),
+            beta_mode_enabled=_parse_guild_beta_mode(guild_id),
+        )
+        for guild_id in guild_ids
+    }
+
+
+GUILD_SETTINGS = _load_guild_settings()
+
+
+def get_guild_settings(guild_id: int | None) -> GuildSettings:
+    configured = GUILD_SETTINGS.get(guild_id) if guild_id is not None else None
+    return GuildSettings(
+        owner_id=(configured.owner_id if configured and configured.owner_id is not None else OWNER_ID),
+        beta_tester_role_id=(
+            configured.beta_tester_role_id
+            if configured and configured.beta_tester_role_id is not None
+            else BETA_TESTER_ROLE_ID
+        ),
+        allowed_channel_ids=(
+            configured.allowed_channel_ids
+            if configured and configured.allowed_channel_ids is not None
+            else ALLOWED_CHANNEL_IDS
+        ),
+        log_channel_id=(
+            configured.log_channel_id
+            if configured and configured.log_channel_id is not None
+            else LOG_CHANNEL_ID
+        ),
+        beta_mode_enabled=configured.beta_mode_enabled if configured else True,
+    )
+
+
+def set_guild_beta_mode(guild_id: int, enabled: bool) -> None:
+    settings = GUILD_SETTINGS.setdefault(guild_id, GuildSettings())
+    settings.beta_mode_enabled = enabled
+
+
+async def _has_guild_access(ctx: commands.Context) -> bool:
+    settings = get_guild_settings(ctx.guild.id if ctx.guild else None)
+    if settings.allowed_channel_ids is not None and ctx.channel.id not in settings.allowed_channel_ids:
+        channels = ", ".join(f"<#{channel_id}>" for channel_id in settings.allowed_channel_ids)
+        raise WrongChannelError(f"Zły kanał, spróbuj na {channels}")
+    if ctx.author.id == settings.owner_id:
+        return True
+    if settings.beta_mode_enabled:
+        return (
+            settings.beta_tester_role_id is not None
+            and isinstance(ctx.author, discord.Member)
+            and any(role.id == settings.beta_tester_role_id for role in ctx.author.roles)
+        )
+    return True
+
+
+bot.check(_has_guild_access)
 
 # Register extensions before connecting
 async def _setup_hook():
@@ -47,6 +169,15 @@ async def _setup_hook():
         logger.info("Załadowano extension cogs.general w setup_hook")
     except Exception as e:
         logger.error(f"Błąd podczas ładowania extension cogs.general w setup_hook: {e}")
+
+    server_cogs_dir = Path(__file__).parent / "cogs" / "servers"
+    for cog_path in sorted(server_cogs_dir.glob("guild_*.py")):
+        if not cog_path.stem.isidentifier():
+            logger.warning("Pomijam plik z nieprawidłową nazwą modułu: %s", cog_path.name)
+            continue
+        extension = f"cogs.servers.{cog_path.stem}"
+        await bot.load_extension(extension)
+        logger.info("Załadowano moduł serwera %s", cog_path.stem.removeprefix("guild_"))
 
 bot.setup_hook = _setup_hook
 
@@ -169,28 +300,11 @@ async def on_ready():
         except Exception as e:
             logger.warning(f"Nie udało się pobrać application_info(): {e}")
 
-    if OWNER_ID is not None:
-        def _has_access(ctx):
-            if ALLOWED_CHANNEL_IDS is not None and ctx.channel.id not in ALLOWED_CHANNEL_IDS:
-                raise WrongChannelError("wrong channel")
-            if ctx.author.id == OWNER_ID:
-                return True
-            # Jeśli tryb beta jest włączony, sprawdź rolę beta testera
-            if BETA_MODE_ENABLED:
-                if BETA_TESTER_ROLE_ID is not None:
-                    for role in ctx.author.roles:
-                        if role.id == BETA_TESTER_ROLE_ID:
-                            return True
-                return False
-            else:
-                # Jeśli tryb beta jest wyłączony, pozwól dostęp wszystkim
-                return True
-
-        bot.check(_has_access)
-        if BETA_TESTER_ROLE_ID is not None:
-            logger.info(f"Zarejestrowano ograniczenie komend dla właściciela, roli ID {BETA_TESTER_ROLE_ID} i kanałów {ALLOWED_CHANNEL_IDS}.")
-        else:
-            logger.info(f"Zarejestrowano ograniczenie komend tylko dla właściciela: {OWNER_ID} i kanałów {ALLOWED_CHANNEL_IDS}.")
+    logger.info(
+        "Zarejestrowano ograniczenia komend z konfiguracją serwerową "
+        "dla %s serwerów.",
+        len(GUILD_SETTINGS),
+    )
 
     # Debug: list registered commands
     cmd_names = sorted(c.name for c in bot.commands)
@@ -199,7 +313,10 @@ async def on_ready():
 def get_log_channel(guild):
     if guild is None:
         return None
-    channel = guild.get_channel(LOG_CHANNEL_ID)
+    log_channel_id = get_guild_settings(guild.id).log_channel_id
+    if log_channel_id is None:
+        return None
+    channel = guild.get_channel(log_channel_id)
     if isinstance(channel, discord.TextChannel):
         return channel
     return None
@@ -301,7 +418,7 @@ async def on_message(message):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, WrongChannelError):
-        await ctx.send("Zły kanał, spróbuj na <#1035107360777175041>")
+        await ctx.send(str(error))
     elif isinstance(error, commands.NotOwner):
         await ctx.send("❌Nie masz uprawnień do użycia tej komendy.")
     elif isinstance(error, commands.CheckFailure):
