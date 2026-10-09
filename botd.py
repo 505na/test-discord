@@ -252,16 +252,36 @@ async def on_ready():
     cmd_names = sorted(c.name for c in bot.commands)
     logger.info(f"Zarejestrowane komendy: {cmd_names}")
 
-def get_log_channel(guild):
-    if guild is None:
-        return None
-    log_channel_id = get_guild_settings(guild.id).log_channel_id
+async def get_log_channel(guild):
+    log_channel_id = get_guild_settings(guild.id if guild else None).log_channel_id
     if log_channel_id is None:
+        logger.warning("Nie skonfigurowano kanału logów.")
         return None
-    channel = guild.get_channel(log_channel_id)
+
+    channel = bot.get_channel(log_channel_id)
+    if channel is None:
+        try:
+            channel = await bot.fetch_channel(log_channel_id)
+        except discord.HTTPException:
+            logger.exception("Nie udało się pobrać kanału logów %s.", log_channel_id)
+            return None
+
     if isinstance(channel, discord.TextChannel):
         return channel
+
+    logger.warning("Kanał logów %s nie jest kanałem tekstowym.", log_channel_id)
     return None
+
+
+async def send_log(guild, embed):
+    log_channel = await get_log_channel(guild)
+    if log_channel is None:
+        return
+
+    try:
+        await log_channel.send(embed=embed)
+    except discord.HTTPException:
+        logger.exception("Nie udało się wysłać logu dla serwera %s.", guild.id if guild else "unknown")
 
 
 async def _format_account_age(created_at):
@@ -288,10 +308,6 @@ async def _format_account_age(created_at):
 
 @bot.event
 async def on_member_join(member):
-    log_channel = get_log_channel(member.guild)
-    if log_channel is None:
-        return
-
     created_at = member.created_at
     age_text = await _format_account_age(created_at)
     joined_at = member.joined_at or discord.utils.utcnow()
@@ -312,15 +328,11 @@ async def on_member_join(member):
         icon_url="https://cdn.discordapp.com/emojis/1374002125509664829.png",
     )
     embed.set_footer(text=f"Dołączenie: {joined_at.strftime('%d.%m.%Y %H:%M:%S')}")
-    await log_channel.send(embed=embed)
+    await send_log(member.guild, embed)
 
 
 @bot.event
 async def on_member_remove(member):
-    log_channel = get_log_channel(member.guild)
-    if log_channel is None:
-        return
-
     left_at = discord.utils.utcnow()
     embed = discord.Embed(
         description=(
@@ -336,7 +348,65 @@ async def on_member_remove(member):
         icon_url="https://cdn.discordapp.com/emojis/1374002125509664829.png",
     )
     embed.set_footer(text=f"Wyjście: {left_at.strftime('%d.%m.%Y %H:%M:%S')}")
-    await log_channel.send(embed=embed)
+    await send_log(member.guild, embed)
+
+
+@bot.event
+async def on_raw_message_delete(payload):
+    guild = bot.get_guild(payload.guild_id) if payload.guild_id else None
+    message = payload.cached_message
+    author = message.author if message else None
+    content = message.content if message else "Brak treści w pamięci podręcznej Discorda."
+
+    embed = discord.Embed(
+        title="Usunięto wiadomość",
+        description=content[:4096],
+        color=discord.Color.from_rgb(255, 82, 82),
+        timestamp=discord.utils.utcnow(),
+    )
+    embed.add_field(
+        name="Autor",
+        value=f"{author} (`{author.id}`)" if author else "Nieznany (wiadomości nie było w cache)",
+        inline=False,
+    )
+    embed.add_field(
+        name="Kanał",
+        value=f"<#{payload.channel_id}> (`{payload.channel_id}`)",
+        inline=True,
+    )
+    embed.add_field(name="ID wiadomości", value=str(payload.message_id), inline=True)
+    if guild:
+        embed.add_field(name="Serwer", value=f"{guild.name} (`{guild.id}`)", inline=False)
+    if message and message.attachments:
+        attachment_list = "\n".join(attachment.filename for attachment in message.attachments)
+        embed.add_field(name="Załączniki", value=attachment_list[:1024], inline=False)
+
+    await send_log(guild, embed)
+
+
+@bot.event
+async def on_message_edit(before, after):
+    if before.content == after.content:
+        return
+
+    embed = discord.Embed(
+        title="Edytowano wiadomość",
+        color=discord.Color.from_rgb(255, 193, 7),
+        timestamp=discord.utils.utcnow(),
+    )
+    embed.add_field(
+        name="Autor",
+        value=f"{after.author} (`{after.author.id}`)",
+        inline=False,
+    )
+    embed.add_field(name="Kanał", value=after.channel.mention, inline=True)
+    embed.add_field(name="ID wiadomości", value=str(after.id), inline=True)
+    embed.add_field(name="Przed edycją", value=before.content[:1024] or "(brak treści)", inline=False)
+    embed.add_field(name="Po edycji", value=after.content[:1024] or "(brak treści)", inline=False)
+    if after.guild:
+        embed.add_field(name="Serwer", value=f"{after.guild.name} (`{after.guild.id}`)", inline=False)
+
+    await send_log(after.guild, embed)
 
 
 @bot.event
