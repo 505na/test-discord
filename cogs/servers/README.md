@@ -37,4 +37,5 @@ async def setup(bot: commands.Bot):
 Użyj prawdziwego numerycznego ID serwera w `GUILD_ID`. Nazwa pliku jest tylko
 czytelną etykietą; to ID w kodzie przypisuje komendy do właściwego serwera.
 Nazwy komend muszą być unikalne w całym bocie, również między plikami
-serwerowymi. Aktualne przykłady rejestrują `!home_alabama` i `!las_sosnowy`.
+serwerowymi. Aktualne przykłady rejestrują `!home_alabama`, `!ksiądz`
+i `!las_sosnowy`.

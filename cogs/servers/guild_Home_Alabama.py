@@ -25,6 +25,19 @@ class HomeAlabamaCommands(ServerCog):
         target = random.choice(members)
         await ctx.send(f"Największym cwelem jest nikt inny niż {target.mention}")
 
+    @commands.command(name="ksiądz")
+    async def ksiadz(self, ctx: commands.Context):
+        members = [member for member in ctx.guild.members if not member.bot]
+        if not members:
+            await ctx.send("Nie ma żadnych osób do wylosowania.")
+            return
+
+        target = random.choice(members)
+        percent = random.randint(0, 100)
+        await ctx.send(
+            f"Jest {percent}% szans, że {target.mention} jest księdzem i kocha dzieci."
+        )
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(HomeAlabamaCommands(bot))
