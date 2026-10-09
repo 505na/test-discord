@@ -361,7 +361,7 @@ class GeneralCommands(commands.Cog):
             )
             return
 
-        await ctx.send("Przeładowano")
+        await ctx.send("✅ Przeładowano")
 
     @commands.command()
     @commands.is_owner()
