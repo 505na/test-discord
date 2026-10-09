@@ -39,3 +39,8 @@ czytelną etykietą; to ID w kodzie przypisuje komendy do właściwego serwera.
 Nazwy komend muszą być unikalne w całym bocie, również między plikami
 serwerowymi. Aktualne przykłady rejestrują `!home_alabama`, `!ksiądz`
 i `!las_sosnowy`.
+
+Po dodaniu lub zmianie komendy w istniejącym pliku można przeładować tylko
+ten cog bez restartu bota: właściciel używa `!reload_server Home_Alabama`
+(nazwa pliku bez `guild_` i `.py`). Nowy plik serwerowy również można tak
+załadować.

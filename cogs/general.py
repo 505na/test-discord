@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import subprocess
+import importlib
 import discord
 from discord.ext import commands
 import asyncio
@@ -326,6 +327,41 @@ class GeneralCommands(commands.Cog):
             await ctx.send("❌ Nie znaleziono polecenia git. Upewnij się, że git jest zainstalowany.")
         except Exception as e:
             await ctx.send(f"❌ Nieoczekiwany błąd: {e}")
+
+    @commands.command(name="reload_server")
+    @commands.is_owner()
+    async def reload_server(self, ctx, server_name: str):
+        server_cogs_dir = Path(__file__).resolve().parent / "servers"
+        cog_path = next(
+            (
+                path
+                for path in server_cogs_dir.glob("guild_*.py")
+                if path.stem.removeprefix("guild_").casefold() == server_name.casefold()
+            ),
+            None,
+        )
+        if cog_path is None or not cog_path.stem.isidentifier():
+            await ctx.send(
+                "❌ Nie znaleziono poprawnego coga serwera. "
+                "Podaj nazwę pliku bez `guild_` i `.py`, np. `Home_Alabama`."
+            )
+            return
+
+        importlib.invalidate_caches()
+        extension = f"cogs.servers.{cog_path.stem}"
+        try:
+            if extension in self.bot.extensions:
+                await self.bot.reload_extension(extension)
+            else:
+                await self.bot.load_extension(extension)
+        except commands.ExtensionError as error:
+            await ctx.send(
+                f"❌ Nie udało się przeładować `{cog_path.name}`: "
+                f"{type(error).__name__}: {error}"
+            )
+            return
+
+        await ctx.send(f"✅ Cog `{cog_path.name}` załadowano ponownie bez restartu bota.")
 
     @commands.command()
     @commands.is_owner()
