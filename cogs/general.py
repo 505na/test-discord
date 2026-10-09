@@ -361,7 +361,7 @@ class GeneralCommands(commands.Cog):
             )
             return
 
-        await ctx.send(f"✅ Cog `{cog_path.name}` załadowano ponownie bez restartu bota.")
+        await ctx.send("Przeładowano")
 
     @commands.command()
     @commands.is_owner()
