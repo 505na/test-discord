@@ -101,12 +101,6 @@ def _load_guild_settings() -> dict[int, GuildSettings]:
 
 
 GUILD_SETTINGS = _load_guild_settings()
-GUILD_SETTINGS.setdefault(
-    1506035412978761738,
-    GuildSettings(log_channel_id=1558585160180699288),
-)
-if GUILD_SETTINGS[1506035412978761738].log_channel_id is None:
-    GUILD_SETTINGS[1506035412978761738].log_channel_id = 1558585160180699288
 
 
 def get_guild_settings(guild_id: int | None) -> GuildSettings:
@@ -436,16 +430,27 @@ async def on_message(message):
 
     if bot.developer_mode:
         ctx = await bot.get_context(message)
+        invoked_with = ctx.invoked_with
+        if not invoked_with:
+            return
+
         if ctx.invoked_with == "dev":
             if await bot.is_owner(message.author):
                 await bot.invoke(ctx)
+            else:
+                await message.channel.send(
+                    "Uruchomiono tryb deweloperski, czynność niedostępna, proszę czekać  XD"
+                )
+            return
+
+        if not invoked_with.endswith("-dev"):
+            await message.channel.send(
+                "Uruchomiono tryb deweloperski, czynność niedostępna, proszę czekać  XD"
+            )
             return
 
         if not await bot.is_owner(message.author):
-            return
-
-        invoked_with = ctx.invoked_with
-        if not invoked_with or not invoked_with.endswith("-dev"):
+            await message.channel.send("Brak dostępu!!")
             return
 
         command_name = invoked_with[:-4].lower()

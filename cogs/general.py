@@ -29,6 +29,10 @@ class GeneralCommands(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
+        if ctx.invoked_with and ctx.invoked_with.lower() == "test-dev":
+            await ctx.send("![✅](https://discord.com/assets/43b7ead1fb91b731.svg) Bot działa w trybie developeskim!")
+            return
+
         await ctx.send("✅ Bot działa!")
 
     @commands.command()
