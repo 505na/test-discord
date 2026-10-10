@@ -11,6 +11,9 @@ class HomeAlabamaCommands(ServerCog):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot, GUILD_ID)
 
+    def format_random_name(self, member):
+        return f"`{member.display_name}`"
+
     @commands.command()
     async def home_alabama(self, ctx: commands.Context):
         await ctx.send(f"Ta komenda działa na serwerze {self.guild_id}.")
@@ -23,7 +26,7 @@ class HomeAlabamaCommands(ServerCog):
             return
 
         target = random.choice(members)
-        await ctx.send(f"Największym cwelem jest nikt inny niż {target.mention}")
+        await ctx.send(f"Największym cwelem jest nikt inny niż {self.format_random_name(target)}")
 
     @commands.command(name="ksiądz")
     async def ksiadz(self, ctx: commands.Context):
@@ -35,7 +38,7 @@ class HomeAlabamaCommands(ServerCog):
         target = random.choice(members)
         percent = random.randint(0, 100)
         await ctx.send(
-            f"Jest {percent}% szans, że {target.mention} jest księdzem i kocha dzieci."
+            f"Jest {percent}% szans, że {self.format_random_name(target)} jest księdzem i kocha dzieci."
         )
 
     @commands.command()
@@ -46,7 +49,7 @@ class HomeAlabamaCommands(ServerCog):
             return
 
         first, second = random.sample(members, 2)
-        await ctx.send(f"Zdzira {first.mention} zostaje {second.mention}")
+        await ctx.send(f"Zdzira {self.format_random_name(first)} zostaje {self.format_random_name(second)}")
 
     @commands.command()
     async def randka(self, ctx: commands.Context):
@@ -56,7 +59,7 @@ class HomeAlabamaCommands(ServerCog):
             return
 
         first, second = random.sample(members, 2)
-        await ctx.send(f"{first.mention} idzie na randkę z {second.mention}")
+        await ctx.send(f"{self.format_random_name(first)} idzie na randkę z {self.format_random_name(second)}")
 
     @commands.command()
     async def kawa(self, ctx: commands.Context):
@@ -66,7 +69,7 @@ class HomeAlabamaCommands(ServerCog):
             return
 
         first, second = random.sample(members, 2)
-        await ctx.send(f"{first.mention} z miłą chęcią wyskoczy na kawkę z {second.mention}")
+        await ctx.send(f"{self.format_random_name(first)} z miłą chęcią wyskoczy na kawkę z {self.format_random_name(second)}")
 
 
 async def setup(bot: commands.Bot):
