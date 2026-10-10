@@ -44,6 +44,7 @@ intents.members = True
 
 # Bot
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot.developer_mode = False
 
 # Ustawienia dostępu można nadpisywać osobno dla każdego serwera.
 @dataclass
@@ -100,6 +101,12 @@ def _load_guild_settings() -> dict[int, GuildSettings]:
 
 
 GUILD_SETTINGS = _load_guild_settings()
+GUILD_SETTINGS.setdefault(
+    1506035412978761738,
+    GuildSettings(log_channel_id=1558585160180699288),
+)
+if GUILD_SETTINGS[1506035412978761738].log_channel_id is None:
+    GUILD_SETTINGS[1506035412978761738].log_channel_id = 1558585160180699288
 
 
 def get_guild_settings(guild_id: int | None) -> GuildSettings:
@@ -427,6 +434,33 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    if bot.developer_mode:
+        ctx = await bot.get_context(message)
+        if ctx.invoked_with == "dev":
+            if await bot.is_owner(message.author):
+                await bot.invoke(ctx)
+            return
+
+        if not await bot.is_owner(message.author):
+            return
+
+        invoked_with = ctx.invoked_with
+        if not invoked_with or not invoked_with.endswith("-dev"):
+            return
+
+        command_name = invoked_with[:-4].lower()
+        scoped_command = None
+        if message.guild:
+            scoped_name = getattr(bot, "server_command_names", {}).get(
+                (message.guild.id, command_name)
+            )
+            if scoped_name:
+                scoped_command = bot.all_commands.get(scoped_name)
+        ctx.command = scoped_command or bot.all_commands.get(command_name)
+        if ctx.command is not None:
+            await bot.invoke(ctx)
+        return
+
     content = message.content.lower()
     goodnight_variants = ["dobranoc", "dombranoc"]
     if any(variant in content for variant in goodnight_variants):
@@ -438,7 +472,29 @@ async def on_message(message):
         else:
             await message.channel.send("Dobranoc")
 
-    await bot.process_commands(message)
+    ctx = await bot.get_context(message)
+    if ctx.invoked_with and message.guild:
+        scoped_name = getattr(bot, "server_command_names", {}).get(
+            (message.guild.id, ctx.invoked_with.lower())
+        )
+        if scoped_name:
+            ctx.command = bot.all_commands.get(scoped_name)
+            if ctx.command is not None:
+                await bot.invoke(ctx)
+            return
+
+    await bot.invoke(ctx)
+
+
+@bot.command(name="dev")
+@commands.is_owner()
+async def toggle_developer_mode(ctx):
+    bot.developer_mode = not bot.developer_mode
+    if bot.developer_mode:
+        await ctx.send("Tryb developerski włączony. Komendy właściciela wymagają dopisku `-dev`.")
+    else:
+        await ctx.send("Tryb developerski wyłączony.")
+
 
 @bot.event
 async def on_command_error(ctx, error):

@@ -4,10 +4,10 @@ from discord.ext import commands
 
 from cogs.server_base import ServerCog, register_server_cog
 
-GUILD_ID = 1526655387804111068
+GUILD_ID = 1506035412978761738
 
 
-class HomeAlabamaCommands(ServerCog):
+class PwordyCommands(ServerCog):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot, GUILD_ID)
 
@@ -15,7 +15,7 @@ class HomeAlabamaCommands(ServerCog):
         return f"`{member.display_name}`"
 
     @commands.command()
-    async def home_alabama(self, ctx: commands.Context):
+    async def pedały(self, ctx: commands.Context):
         await ctx.send(f"Ta komenda działa na serwerze {ctx.guild.id}.")
 
     @commands.command()
@@ -73,4 +73,4 @@ class HomeAlabamaCommands(ServerCog):
 
 
 async def setup(bot: commands.Bot):
-    await register_server_cog(bot, HomeAlabamaCommands(bot))
+    await register_server_cog(bot, PwordyCommands(bot))
