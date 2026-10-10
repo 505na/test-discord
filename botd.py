@@ -21,6 +21,9 @@ class WrongChannelError(commands.CheckFailure):
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DiscordBot")
 
+# Kanały, z których nie należy wysyłać logów.
+IGNORED_LOG_CHANNEL_IDS = {1527067115327066393}
+
 # Load environment
 load_dotenv("config.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -101,6 +104,13 @@ GUILD_SETTINGS = _load_guild_settings()
 
 def get_guild_settings(guild_id: int | None) -> GuildSettings:
     configured = GUILD_SETTINGS.get(guild_id) if guild_id is not None else None
+
+    if guild_id is not None and configured is None:
+        return GuildSettings(
+            allowed_channel_ids=ALLOWED_CHANNEL_IDS,
+            log_channel_id=None,
+        )
+
     return GuildSettings(
         allowed_channel_ids=(
             configured.allowed_channel_ids
@@ -110,7 +120,7 @@ def get_guild_settings(guild_id: int | None) -> GuildSettings:
         log_channel_id=(
             configured.log_channel_id
             if configured and configured.log_channel_id is not None
-            else LOG_CHANNEL_ID
+            else (LOG_CHANNEL_ID if guild_id is None else None)
         ),
     )
 
@@ -273,7 +283,10 @@ async def get_log_channel(guild):
     return None
 
 
-async def send_log(guild, embed):
+async def send_log(guild, embed, channel_id: int | None = None):
+    if channel_id in IGNORED_LOG_CHANNEL_IDS:
+        return
+
     log_channel = await get_log_channel(guild)
     if log_channel is None:
         return
@@ -381,7 +394,7 @@ async def on_raw_message_delete(payload):
         attachment_list = "\n".join(attachment.filename for attachment in message.attachments)
         embed.add_field(name="Załączniki", value=attachment_list[:1024], inline=False)
 
-    await send_log(guild, embed)
+    await send_log(guild, embed, channel_id=payload.channel_id)
 
 
 @bot.event
@@ -406,7 +419,7 @@ async def on_message_edit(before, after):
     if after.guild:
         embed.add_field(name="Serwer", value=f"{after.guild.name} (`{after.guild.id}`)", inline=False)
 
-    await send_log(after.guild, embed)
+    await send_log(after.guild, embed, channel_id=after.channel.id)
 
 
 @bot.event
