@@ -38,6 +38,36 @@ class HomeAlabamaCommands(ServerCog):
             f"Jest {percent}% szans, że {target.mention} jest księdzem i kocha dzieci."
         )
 
+    @commands.command()
+    async def zdzira(self, ctx: commands.Context):
+        members = [member for member in ctx.guild.members if not member.bot]
+        if len(members) < 2:
+            await ctx.send("Potrzebuję co najmniej dwóch osób do wylosowania.")
+            return
+
+        first, second = random.sample(members, 2)
+        await ctx.send(f"Zdzira {first.mention} zostaje {second.mention}")
+
+    @commands.command()
+    async def randka(self, ctx: commands.Context):
+        members = [member for member in ctx.guild.members if not member.bot]
+        if len(members) < 2:
+            await ctx.send("Potrzebuję co najmniej dwóch osób do wylosowania.")
+            return
+
+        first, second = random.sample(members, 2)
+        await ctx.send(f"{first.mention} idzie na randkę z {second.mention}")
+
+    @commands.command()
+    async def kawa(self, ctx: commands.Context):
+        members = [member for member in ctx.guild.members if not member.bot]
+        if len(members) < 2:
+            await ctx.send("Potrzebuję co najmniej dwóch osób do wylosowania.")
+            return
+
+        first, second = random.sample(members, 2)
+        await ctx.send(f"{first.mention} z miłą chęcią wyskoczy na kawkę z {second.mention}")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(HomeAlabamaCommands(bot))
