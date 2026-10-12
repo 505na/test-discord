@@ -43,13 +43,13 @@ class HomeAlabamaCommands(ServerCog):
 
     @commands.command()
     async def zdzira(self, ctx: commands.Context):
-        members = [member for member in ctx.guild.members if not member.bot]
-        if len(members) < 2:
-            await ctx.send("Potrzebuję co najmniej dwóch osób do wylosowania.")
+        members = [member for member in ctx.guild.members if not member.bot and member != ctx.author]
+        if not members:
+            await ctx.send("Potrzebuję co najmniej jedną inną osobę do wylosowania.")
             return
 
-        first, second = random.sample(members, 2)
-        await ctx.send(f"Zdzirą {self.format_random_name(first)} zostaje {self.format_random_name(second)}")
+        target = random.choice(members)
+        await ctx.send(f"{self.format_random_name(ctx.author)} robi zdzirę z {self.format_random_name(target)}")
 
     @commands.command()
     async def randka(self, ctx: commands.Context):
