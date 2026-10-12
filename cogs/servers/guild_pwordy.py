@@ -49,7 +49,7 @@ class PwordyCommands(ServerCog):
             return
 
         target = random.choice(members)
-        await ctx.send(f"{self.format_random_name(ctx.author)} robi zdzirę z {self.format_random_name(target)}")
+        await ctx.send(f"{ctx.author.mention} robi zdzirę z {self.format_random_name(target)}")
 
     @commands.command()
     async def randka(self, ctx: commands.Context):
